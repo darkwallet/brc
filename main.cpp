@@ -48,7 +48,7 @@ int main(int argc, char** argv)
         log_fatal() << "brc: Wrong number of arguments.";
         return -1;
     }
-    std::string zmq_transport = "tcp://*:9009", client_certs_dir;
+    std::string zmq_transport = "tcp://*:9109", client_certs_dir;
     if (argc == 2)
         zmq_transport = argv[1];
     if (argc == 3)
