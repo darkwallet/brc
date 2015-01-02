@@ -17,6 +17,8 @@ public:
 
     bool broadcast(const bc::data_chunk& raw_tx);
 
+    size_t total_connections() const;
+
 private:
     std::ofstream outfile_, errfile_;
     bc::threadpool pool_;

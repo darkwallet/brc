@@ -33,6 +33,29 @@ void create_cert_if_not_exists(const std::string& filename)
     log_info() << "Public key: " << cert.public_text();
 }
 
+void keep_pushing_count(broadcaster& brc)
+{
+    // Create ZMQ socket.
+    czmqpp::context ctx;
+    BITCOIN_ASSERT(ctx.self());
+    czmqpp::socket socket(ctx, ZMQ_PUB);
+    BITCOIN_ASSERT(socket.self());
+    int bind_rc = socket.bind("tcp://*:9112");
+    BITCOIN_ASSERT(bind_rc != -1);
+    while (true)
+    {
+        czmqpp::message msg;
+        czmqpp::data_chunk data = bc::uncast_type(brc.total_connections());
+        msg.append(data);
+        // Send it.
+        bool rc = msg.send(socket);
+        BITCOIN_ASSERT(rc);
+        sleep(0.5);
+    }
+}
+
+void send_error_message(const bc::hash_digest& tx_hash, const std::string& err);
+
 int main(int argc, char** argv)
 {
     if (argc > 1 && (argv[1] == "-h" || argv[1] == "--help"))
@@ -48,7 +71,7 @@ int main(int argc, char** argv)
         log_fatal() << "brc: Wrong number of arguments.";
         return -1;
     }
-    std::string zmq_transport = "tcp://*:9009", client_certs_dir;
+    std::string zmq_transport = "tcp://*:9109", client_certs_dir;
     if (argc == 2)
         zmq_transport = argv[1];
     if (argc == 3)
@@ -73,7 +96,7 @@ int main(int argc, char** argv)
     signal(SIGINT, interrupt_handler);
     // ZMQ stuff
     czmqpp::context ctx;
-    assert(ctx.self());
+    BITCOIN_ASSERT(ctx.self());
     // Start the authenticator and tell it do authenticate clients
     // via the certificates stored in the .curve directory.
     czmqpp::authenticator auth(ctx);
@@ -111,6 +134,8 @@ int main(int argc, char** argv)
     }
     czmqpp::poller poller(server);
     BITCOIN_ASSERT(poller.self());
+    // Thread which keeps publishing the connection count.
+    std::thread thread([&brc]() { keep_pushing_count(brc); });
     while (!stopped)
     {
         czmqpp::socket sock = poller.wait(poll_sleep_interval);
@@ -123,6 +148,7 @@ int main(int argc, char** argv)
         if (!brc.broadcast(raw_tx))
             log_warning() << "Invalid Tx received: " << raw_tx;
     }
+    thread.detach();
     brc.stop();
     return 0;
 }
