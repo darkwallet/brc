@@ -93,16 +93,29 @@ void broadcaster::stop()
     pool_.join();
 }
 
-void send_error_message(const bc::hash_digest& tx_hash, const std::string& err)
+struct summary_stats
 {
-    bc::log_warning(LOG_BRC) << "Rejected: " << err;
+    size_t current()
+    {
+        return success + failure;
+    }
+
+    size_t success = 0;
+    size_t failure = 0;
+};
+
+typedef std::shared_ptr<summary_stats> summary_stats_ptr;
+
+void send_summary(const bc::hash_digest& tx_hash, const summary_stats& stats)
+{
+    bc::log_debug(LOG_BRC) << "Summary for: " << tx_hash;
     // Create ZMQ socket.
     static czmqpp::context ctx;
     static czmqpp::socket socket(ctx, ZMQ_PUB);
     static bool is_initialized = false;
     if (!is_initialized)
     {
-        bc::log_debug(LOG_BRC) << "Initializing errors socket.";
+        bc::log_debug(LOG_BRC) << "Initializing summary socket.";
         BITCOIN_ASSERT(ctx.self());
         BITCOIN_ASSERT(socket.self());
         int bind_rc = socket.bind("tcp://*:9110");
@@ -113,11 +126,14 @@ void send_error_message(const bc::hash_digest& tx_hash, const std::string& err)
     // Create a message.
     czmqpp::message msg;
     // tx_hash
-    czmqpp::data_chunk data_hash(tx_hash.begin(), tx_hash.end());
+    const czmqpp::data_chunk data_hash(tx_hash.begin(), tx_hash.end());
     msg.append(data_hash);
-    // Error message
-    czmqpp::data_chunk data_err(err.begin(), err.end());
-    msg.append(data_err);
+    // Success
+    const czmqpp::data_chunk data_success = bc::uncast_type(stats.success);
+    msg.append(data_success);
+    // Failure
+    const czmqpp::data_chunk data_failure = bc::uncast_type(stats.failure);
+    msg.append(data_failure);
     // Send it.
     bool rc = msg.send(socket);
     BITCOIN_ASSERT(rc);
@@ -133,20 +149,27 @@ bool broadcaster::broadcast(const bc::data_chunk& raw_tx)
     catch (bc::end_of_stream)
     {
         bc::log_warning(LOG_BRC) << "Bad stream.";
-        std::error_code ec = bc::error::bad_stream;
-        send_error_message(bc::null_hash, ec.message());
         return false;
     }
     bc::hash_digest tx_hash = bc::hash_transaction(tx);
     bc::log_info(LOG_BRC) << "Sending: " << tx_hash;
+    // Summary stats
+    summary_stats_ptr stats = std::make_shared<summary_stats>();
     // We can ignore the send since we have connections to monitor
     // from the network and resend if neccessary anyway.
-    auto ignore_send = [tx_hash](const std::error_code& ec, size_t)
+    auto tally_send = [tx_hash, stats](
+        const std::error_code& ec, size_t total_connections)
     {
+        // Increment respective counters for summary statistics.
         if (ec)
-            send_error_message(tx_hash, ec.message());
+            ++stats->failure;
+        else
+            ++stats->success;
+        // Once reach the end, send out summary information.
+        if (stats->current() == total_connections)
+            send_summary(tx_hash, *stats);
     };
-    broadcast_p2p_.broadcast(tx, ignore_send);
+    broadcast_p2p_.broadcast(tx, tally_send);
     return true;
 }
 
