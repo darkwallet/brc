@@ -146,8 +146,7 @@ bool broadcaster::broadcast(const bc::data_chunk& raw_tx)
         if (ec)
             send_error_message(tx_hash, ec.message());
     };
-    ignore_send(bc::error::service_stopped, 10);
-    //broadcast_p2p_.broadcast(tx, ignore_send);
+    broadcast_p2p_.broadcast(tx, ignore_send);
     return true;
 }
 
