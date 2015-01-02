@@ -91,7 +91,7 @@ int main(int argc, char** argv)
         {
             ec_promise.set_value(ec);
         };
-    brc.start(4, 40, broadcaster_started);
+    brc.start(4, target_connections, broadcaster_started);
     std::error_code ec = ec_promise.get_future().get();
     if (ec)
     {
