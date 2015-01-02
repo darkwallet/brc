@@ -3,6 +3,8 @@
 
 #include <functional>
 #include <bitcoin/bitcoin.hpp>
+#include "util.hpp"
+#include "define.hpp"
 
 class broadcaster
 {

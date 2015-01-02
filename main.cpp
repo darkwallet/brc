@@ -40,7 +40,8 @@ void keep_pushing_count(broadcaster& brc)
     BITCOIN_ASSERT(ctx.self());
     czmqpp::socket socket(ctx, ZMQ_PUB);
     BITCOIN_ASSERT(socket.self());
-    int bind_rc = socket.bind("tcp://*:9112");
+    int bind_rc = socket.bind(
+        listen_transport(publish_connections_count_port));
     BITCOIN_ASSERT(bind_rc != -1);
     while (true)
     {
@@ -58,7 +59,12 @@ void send_error_message(const bc::hash_digest& tx_hash, const std::string& err);
 
 int main(int argc, char** argv)
 {
-    if (argc > 1 && (argv[1] == "-h" || argv[1] == "--help"))
+    // Used for casting the char** string to std::string.
+    auto is_help = [](const std::string arg)
+    {
+        return arg == "-h" || arg == "--help";
+    };
+    if (argc > 1 && is_help(argv[1]))
     {
         log_info() << "Usage: brc [ZMQ_TRANSPORT] [CLIENT_CERTS_DIR]";
         log_info() << "Example: brc tcp://*:8989";
@@ -68,10 +74,11 @@ int main(int argc, char** argv)
     }
     if (argc > 3)
     {
-        log_fatal() << "brc: Wrong number of arguments.";
+        log_fatal() << "brc: Too many arguments.";
         return -1;
     }
-    std::string zmq_transport = "tcp://*:9109", client_certs_dir;
+    std::string zmq_transport = listen_transport(push_transaction_port);
+    std::string client_certs_dir;
     if (argc == 2)
         zmq_transport = argv[1];
     if (argc == 3)

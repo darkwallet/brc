@@ -2,8 +2,6 @@
 
 #include <czmq++/czmq.hpp>
 
-#define LOG_BRC "broadcaster"
-
 using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
@@ -118,7 +116,7 @@ void send_summary(const bc::hash_digest& tx_hash, const summary_stats& stats)
         bc::log_debug(LOG_BRC) << "Initializing summary socket.";
         BITCOIN_ASSERT(ctx.self());
         BITCOIN_ASSERT(socket.self());
-        int bind_rc = socket.bind("tcp://*:9110");
+        int bind_rc = socket.bind(listen_transport(publish_summary_port));
         BITCOIN_ASSERT(bind_rc != -1);
         is_initialized = true;
         sleep(1);

@@ -1,0 +1,42 @@
+===
+brc
+===
+
+Broadcaster component. Allows you to connect to Bitcoin nodes and
+broadcast a transaction to them with feedback over ZMQ sockets.
+
+PUSH transaction to port 9109.
+
+Port 9110 will reply back with a message that has 3 frames:
+
+  [ tx_hash:32 ]
+  [ success:8  ] (little-endian, number of successes)
+  [ failure:8  ] (little-endian, number of failures)
+
+The success and failures simply indicate whether the transaction got
+delivered or not. It does not say anything about the validity of that
+transaction.
+
+If the transaction cannot be deserialized the daemon outputs "Bad stream"
+but does nothing further.
+
+You can change the ports in define.hpp
+
+  $ ./brc -h
+  INFO: Usage: brc [ZMQ_TRANSPORT] [CLIENT_CERTS_DIR]
+  INFO: Example: brc tcp://*:8989
+  INFO: An empty CLIENT_CERTS_DIR will accept all certificates.
+  INFO: See ZMQ manual for more info.
+
+Simple invocation:
+
+  $ ./brc
+
+For testing see the test/ subdirectory.
+
+  $ cd test/
+  $ python listen.py &
+  $ python poke.py
+
+And watch the output of the brc terminal.
+
