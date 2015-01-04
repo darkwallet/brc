@@ -2,7 +2,7 @@
 #include <boost/filesystem.hpp>
 #include <signal.h>
 #include <bitcoin/bitcoin.hpp>
-#include <czmq++/czmq.hpp>
+#include <czmq++/czmqpp.hpp>
 #include "btcnet.hpp"
 
 //#define CRYPTO_ENABLED
@@ -46,8 +46,8 @@ void keep_pushing_count(broadcaster& brc)
     while (true)
     {
         czmqpp::message msg;
-        czmqpp::data_chunk data = bc::uncast_type(brc.total_connections());
-        msg.append(data);
+        const auto data = bc::to_little_endian(brc.total_connections());
+        msg.append(bc::to_data_chunk(data));
         // Send it.
         bool rc = msg.send(socket);
         BITCOIN_ASSERT(rc);
@@ -153,7 +153,8 @@ int main(int argc, char** argv)
         BITCOIN_ASSERT(msg.parts().size() == 1);
         const bc::data_chunk& raw_tx = msg.parts()[0];
         if (!brc.broadcast(raw_tx))
-            log_warning() << "Invalid Tx received: " << raw_tx;
+            log_warning() << "Invalid Tx received: "
+                << bc::encode_base16(raw_tx);
     }
     thread.detach();
     brc.stop();

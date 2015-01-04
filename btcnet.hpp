@@ -24,10 +24,10 @@ public:
 private:
     std::ofstream outfile_, errfile_;
     bc::threadpool pool_;
-    bc::hosts hosts_;
-    bc::handshake handshake_;
-    bc::network network_;
-    bc::protocol broadcast_p2p_;
+    bc::network::hosts hosts_;
+    bc::network::handshake handshake_;
+    bc::network::network network_;
+    bc::network::protocol broadcast_p2p_;
 };
 
 #endif

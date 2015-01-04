@@ -1,6 +1,6 @@
 #include "btcnet.hpp"
 
-#include <czmq++/czmq.hpp>
+#include <czmq++/czmqpp.hpp>
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -106,7 +106,8 @@ typedef std::shared_ptr<summary_stats> summary_stats_ptr;
 
 void send_summary(const bc::hash_digest& tx_hash, const summary_stats& stats)
 {
-    bc::log_debug(LOG_BRC) << "Summary for: " << tx_hash;
+    bc::log_debug(LOG_BRC) << "Sending summary for: "
+        << bc::encode_hash(tx_hash);
     // Create ZMQ socket.
     static czmqpp::context ctx;
     static czmqpp::socket socket(ctx, ZMQ_PUB);
@@ -127,11 +128,11 @@ void send_summary(const bc::hash_digest& tx_hash, const summary_stats& stats)
     const czmqpp::data_chunk data_hash(tx_hash.begin(), tx_hash.end());
     msg.append(data_hash);
     // Success
-    const czmqpp::data_chunk data_success = bc::uncast_type(stats.success);
-    msg.append(data_success);
+    const auto data_success = bc::to_little_endian(stats.success);
+    msg.append(bc::to_data_chunk(data_success));
     // Failure
-    const czmqpp::data_chunk data_failure = bc::uncast_type(stats.failure);
-    msg.append(data_failure);
+    const auto data_failure = bc::to_little_endian(stats.failure);
+    msg.append(bc::to_data_chunk(data_failure));
     // Send it.
     bool rc = msg.send(socket);
     BITCOIN_ASSERT(rc);
@@ -150,7 +151,7 @@ bool broadcaster::broadcast(const bc::data_chunk& raw_tx)
         return false;
     }
     bc::hash_digest tx_hash = bc::hash_transaction(tx);
-    bc::log_info(LOG_BRC) << "Sending: " << tx_hash;
+    bc::log_info(LOG_BRC) << "Broadcasting: " << bc::encode_hash(tx_hash);
     // Summary stats
     summary_stats_ptr stats = std::make_shared<summary_stats>();
     // We can ignore the send since we have connections to monitor
