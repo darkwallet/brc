@@ -110,10 +110,14 @@ void send_summary(const bc::hash_digest& tx_hash, const summary_stats& stats)
         << bc::encode_hash(tx_hash);
     // Create ZMQ socket.
     static czmqpp::context ctx;
+    static czmqpp::authenticator auth(ctx);
     static czmqpp::socket socket(ctx, ZMQ_PUB);
     static bool is_initialized = false;
     if (!is_initialized)
     {
+#ifdef ONLY_LOCALHOST_CONNECTIONS
+        auth.allow("127.0.0.1");
+#endif
         bc::log_debug(LOG_BRC) << "Initializing summary socket.";
         BITCOIN_ASSERT(ctx.self());
         BITCOIN_ASSERT(socket.self());

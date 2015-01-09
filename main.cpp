@@ -5,9 +5,6 @@
 #include <czmq++/czmqpp.hpp>
 #include "btcnet.hpp"
 
-//#define CRYPTO_ENABLED
-#define ONLY_LOCALHOST_CONNECTIONS
-
 using bc::log_info;
 using bc::log_warning;
 using bc::log_fatal;
@@ -38,6 +35,10 @@ void keep_pushing_count(broadcaster& brc)
     // Create ZMQ socket.
     czmqpp::context ctx;
     BITCOIN_ASSERT(ctx.self());
+    czmqpp::authenticator auth(ctx);
+#ifdef ONLY_LOCALHOST_CONNECTIONS
+    auth.allow("127.0.0.1");
+#endif
     czmqpp::socket socket(ctx, ZMQ_PUB);
     BITCOIN_ASSERT(socket.self());
     int bind_rc = socket.bind(
@@ -110,8 +111,6 @@ int main(int argc, char** argv)
     czmqpp::authenticator auth(ctx);
     auth.set_verbose(true);
 #ifdef ONLY_LOCALHOST_CONNECTIONS
-    // Comment below line to allow connections outside of localhost.
-    // i.e if you deploy it on another machine.
     auth.allow("127.0.0.1");
 #endif
 #ifdef CRYPTO_ENABLED
