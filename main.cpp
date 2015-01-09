@@ -96,6 +96,7 @@ int main(int argc, char** argv)
     if (ec)
     {
         log_fatal() << "Problem starting broadcaster: " << ec.message();
+        brc.stop();
         return -1;
     }
     log_info() << "Node started.";
