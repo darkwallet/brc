@@ -137,6 +137,7 @@ int main(int argc, char** argv)
     {
         log_fatal() << "Error initializing ZMQ socket: "
             << zmq_strerror(zmq_errno());
+        brc.stop();
         return -1;
     }
     czmqpp::poller poller(server);
