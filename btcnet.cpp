@@ -106,7 +106,7 @@ typedef std::shared_ptr<summary_stats> summary_stats_ptr;
 
 void send_summary(const bc::hash_digest& tx_hash, const summary_stats& stats)
 {
-    bc::log_debug(LOG_BRC) << "Sending summary for: "
+    bc::log_info(LOG_BRC) << "Sending summary for: "
         << bc::encode_hash(tx_hash);
     // Create ZMQ socket.
     static czmqpp::context ctx;
