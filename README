@@ -5,7 +5,10 @@ brc
 Broadcaster component. Allows you to connect to Bitcoin nodes and
 broadcast a transaction to them with feedback over ZMQ sockets.
 
-PUSH transaction to port 9109.
+Push transaction with REQ socket to port 9109.
+Socket will respond back with either 1 (true) or 0 (fail).
+Failure only happens because it couldn't deserialize the transaction data
+before broadcasting.
 
 Port 9110 will reply back with a message that has 3 frames:
 
