@@ -123,7 +123,7 @@ int main(int argc, char** argv)
         czmqpp::load_cert(server_cert_filename);
 #endif
     // Create socket.
-    czmqpp::socket server(ctx, ZMQ_PULL);
+    czmqpp::socket server(ctx, ZMQ_REP);
     BITCOIN_ASSERT(server.self());
     server.set_linger(0);
 #ifdef CRYPTO_ENABLED
@@ -149,13 +149,25 @@ int main(int argc, char** argv)
         czmqpp::socket sock = poller.wait(poll_sleep_interval);
         if (!sock.self())
             continue;
+        // Receive message.
         czmqpp::message msg;
         msg.receive(sock);
         BITCOIN_ASSERT(msg.parts().size() == 1);
         const bc::data_chunk& raw_tx = msg.parts()[0];
-        if (!brc.broadcast(raw_tx))
+        bool success = brc.broadcast(raw_tx);
+        if (!success)
             log_warning() << "Invalid Tx received: "
                 << bc::encode_base16(raw_tx);
+        // Respond back.
+        czmqpp::message response_msg;
+        // If successful respond with 0x01, otherwise return 0x00
+        constexpr uint8_t response_true = 0x01;
+        constexpr uint8_t response_false = 0x01;
+        czmqpp::data_chunk response{{
+            success ? response_true : response_false}};
+        response_msg.append(response);
+        bool rc = response_msg.send(sock);
+        BITCOIN_ASSERT(rc);
     }
     thread.detach();
     brc.stop();
