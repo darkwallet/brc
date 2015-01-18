@@ -162,7 +162,7 @@ int main(int argc, char** argv)
         czmqpp::message response_msg;
         // If successful respond with 0x01, otherwise return 0x00
         constexpr uint8_t response_true = 0x01;
-        constexpr uint8_t response_false = 0x01;
+        constexpr uint8_t response_false = 0x00;
         czmqpp::data_chunk response{{
             success ? response_true : response_false}};
         response_msg.append(response);
