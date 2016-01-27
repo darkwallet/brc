@@ -52,7 +52,7 @@ void keep_pushing_count(broadcaster& brc)
         // Send it.
         bool rc = msg.send(socket);
         BITCOIN_ASSERT(rc);
-        sleep(0.5);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
 
