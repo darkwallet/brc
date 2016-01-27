@@ -26,7 +26,7 @@ private:
     bc::threadpool pool_;
     bc::network::hosts hosts_;
     bc::network::handshake handshake_;
-    bc::network::network network_;
+    bc::network::peer network_;
     bc::network::protocol broadcast_p2p_;
 };
 
